@@ -1,5 +1,3 @@
-#!/usr/local/bin/node
-
 const fetch = require("node-fetch");
 const { URLSearchParams } = require("url");
 const fs = require("fs");
@@ -8,9 +6,7 @@ const HOME_DIR = require("os").homedir();
 const TMP_DIR = require("os").tmpdir();
 const yauzl = require("yauzl");
 const path = require("path");
-
-const USERNAME = "dzerjinski";
-const PASSWORD = "Pa55w0rd$";
+const { exit } = require("process");
 
 const URL_MODULES = "https://www.legendasdivx.pt/modules.php";
 const URL_LOGIN = "https://www.legendasdivx.pt/forum/ucp.php?mode=login";
@@ -22,39 +18,60 @@ const ACCEPTED_FORMATS = [".mkv", ".mp4", ".avi"];
 const COOKIES_PATH = path.join(HOME_DIR, "/.legendas-divx-cookies");
 var COOKIES = {};
 
-var SUBTITLES_CONTENT_TYPES = {
+const SUBTITLES_CONTENT_TYPES = {
 	"application/x-rar-compressed": "rar",
 	"application/zip": "zip",
 	"text/html": "html",
 };
 
+if (process.argv.length >= 3 && process.argv[2] === "-h") {
+	console.log("Usage: legendas-divx.js [-f|-h] files...");
+	exit(0);
+}
+
 main();
 
 async function main() {
-	// Processa argumentos de descarta directorias e ficheiros com legendas
-	let force = false;
+	const files = parseArgsAndDropFilesWithSrt();
 
-	let files = process.argv.filter((value, index) => {
-		if (index >= 2) {
-			if (value === "-f") force = true;
-			else if (value === "-h") {
-				console.log("Usage: legendas-divx.js [-f|-h] files...");
-				return;
-			} else {
-				if (ACCEPTED_FORMATS.includes(value.slice(-4))) {
-					if (force || !fs.existsSync(value.slice(0, -3) + "srt")) return true;
-				} else {
-					console.error(`Skipping ${value} (Bad Format)`);
-				}
-			}
+	// Obtém os metadados dos vídeos
+	const metadata = await parseVideosMetadata(files);
+
+	await authenticate();
+
+	// Faz download dos metadados das legendas
+	const subs = await downloadSubsMetadata(metadata);
+
+	// Faz dowload das legendas
+	if (subs.length > 0) {
+		subs.forEach(downloadSubs);
+	}
+}
+
+// Processa argumentos de descarta directorias e ficheiros com legendas
+function parseArgsAndDropFilesWithSrt() {
+	const [, , ...files] = process.argv;
+
+	const force = files[0] === "-f";
+	if (force) files.shift();
+
+	const movies = files.filter((file) => {
+		if (isAcceptedFormat(file) && (force || !fs.existsSync(file.slice(0, -3) + "srt"))) {
+			return true;
 		}
 
+		console.error(`Skipping ${file} (Bad Format)`);
 		return false;
 	});
 
-	// Obtém os metadados dos vídeos
-	let metadata = getVideosMetadata(files);
+	return movies;
+}
 
+function isAcceptedFormat(file) {
+	return ACCEPTED_FORMATS.includes(file.slice(-4));
+}
+
+async function authenticate() {
 	// Inicializa a ligação para legendasdivx.pt
 	// 1. Verifica as cookies no ficheiro ~/.legendas-divx-cookies
 	if (fs.existsSync(COOKIES_PATH)) COOKIES = JSON.parse(String(fs.readFileSync(COOKIES_PATH)));
@@ -62,8 +79,8 @@ async function main() {
 
 	// 2. Faz o login para obter novas cookies se necessário
 	let loginFormData = {
-		username: USERNAME,
-		password: PASSWORD,
+		username: process.env.LEGENDAS_DIVX_USERNAME,
+		password: process.env.LEGENDAS_DIVX_PASSWORD,
 		redirect: "index.php",
 		login: "Ligue-se",
 	};
@@ -81,21 +98,13 @@ async function main() {
 	fs.writeFile(COOKIES_PATH, JSON.stringify(COOKIES), (err) => {
 		if (err) console.error(err);
 	});
-
-	// Faz download dos metadados das legendas
-	metadata = await downloadSubsMetadata(metadata);
-
-	// Faz dowload das legendas
-	if (metadata.length > 0) {
-		metadata.forEach(downloadSubs);
-	}
 }
 
 /**
  *
  * @param {string[]} files
  */
-async function getVideosMetadata(files) {
+async function parseVideosMetadata(files) {
 	let metadata = new Array();
 
 	for (let index = 0; index < files.length; index++) {
@@ -117,7 +126,7 @@ async function getVideosMetadata(files) {
 		let splits = data.title.match(/(.*)\W+(s\d\de\d\d|\d{4})\.?(\d{3,4}p)?\.(\w+)/i);
 		if (splits) {
 			data.shortTitle = splits[1].replace(/\./g, " ").trim();
-			data.quality = splits[3] ? splits[3].trim() : "480p";
+			data.quality = splits[3] ? splits[3].trim() : "720p";
 			data.release = splits[4].trim();
 
 			if (splits[2].length == 4) {
@@ -327,7 +336,7 @@ function extractZip(filename, data) {
 					let match =
 						pass == 2
 							? true
-							: pass == 0
+							: pass === 0
 							? matchFull(data, entry.fileName)
 							: matchPartial(data, entry.fileName);
 					if (match) {
@@ -414,12 +423,10 @@ function cookiesToString(cookies) {
 	let cString = "";
 	let index = 0;
 	for (const key in cookies) {
-		if (cookies.hasOwnProperty(key)) {
-			if (index > 0) cString += "; ";
+		if (index > 0) cString += "; ";
 
-			cString += `${key}=${cookies[key].value ? cookies[key].value : ""}`;
-			index++;
-		}
+		cString += `${key}=${cookies[key].value ? cookies[key].value : ""}`;
+		index++;
 	}
 
 	return cString === "" ? null : cString;
