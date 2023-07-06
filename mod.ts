@@ -31,12 +31,20 @@ async function toDownloadPromise(client: LegendasDivxClient, result: SearchResul
 }
 
 function printNoResults(noResults: SearchResults[]) {
+	if (noResults.length === 0) {
+		return;
+	}
+
 	console.log("No results found for the following files:");
 	noResults.forEach((result) => console.log(result.metadata.rawTitle));
 	console.log("--------------------------------------------------");
 }
 
 function printOtherResults(withResults: SearchResults[]) {
+	if (withResults.length === 0) {
+		return;
+	}
+
 	console.log("Non optimal subtitles found for the following files:");
 	withResults.forEach((result) => {
 		console.log(result.metadata.rawTitle);
