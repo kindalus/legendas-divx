@@ -1,7 +1,7 @@
 import { fs, parse } from "./deps.ts";
 
 import { LegendasDivxClient } from "./src/legendas_divx_client.ts";
-import { parseMediaFilename } from "./src/media_file_parser.ts";
+import { MediaMetadata, parseMediaFilename } from "./src/media_file_parser.ts";
 import { SearchResults, parseSearchResult } from "./src/subtitle_search_result_parser.ts";
 import { extractZip } from "./src/zip_extractor.ts";
 import { extractRar } from "./src/rar_extractor.ts";
@@ -85,19 +85,13 @@ async function searchForSubtitles(
 	client: LegendasDivxClient,
 	files: string[]
 ): Promise<SearchResults[]> {
-	const resultPromises = files.map(async (file) => {
-		const metadata = parseMediaFilename(file);
+	const parsedFiles = files
+		.map(parseMediaFilename)
+		.filter((f) => f !== undefined) as MediaMetadata[];
 
-		if (!metadata) {
-			return undefined;
-		}
+	const resultPromises = parsedFiles.map((metadata) => client.searchSubtitles(metadata));
 
-		return await client.searchSubtitles(metadata);
-	});
-
-	const validPromises = resultPromises.filter((p) => p !== undefined) as Promise<SearchResults>[];
-
-	const results = await Promise.all(validPromises);
+	const results = await Promise.all(resultPromises);
 
 	return results;
 }
