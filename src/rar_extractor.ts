@@ -1,4 +1,5 @@
-import unrar from "node-unrar-js";
+import { unrar } from "../deps.ts";
+
 import { MediaMetadata } from "./media_file_parser.ts";
 import { fullMatch, partialMatch } from "./media_matchers.ts";
 

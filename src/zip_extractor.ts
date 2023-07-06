@@ -1,4 +1,4 @@
-import yauzl from "yauzl";
+import { yauzl } from "../deps.ts";
 
 import { MediaMetadata } from "./media_file_parser.ts";
 import { fullMatch, partialMatch } from "./media_matchers.ts";

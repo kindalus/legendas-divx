@@ -1,5 +1,4 @@
-import { parse } from "flags";
-import { existsSync } from "fs";
+import { fs, parse } from "./deps.ts";
 
 import { LegendasDivxClient } from "./src/legendas_divx_client.ts";
 import { parseMediaFilename } from "./src/media_file_parser.ts";
@@ -79,7 +78,7 @@ function splitResults(results: SearchResults[]) {
 
 function nonExistingSubtitles(filename: string): boolean {
 	const subtitleFilename = filename.replace(/\.[^.]+$/, ".srt");
-	return !existsSync(subtitleFilename);
+	return !fs.existsSync(subtitleFilename);
 }
 
 async function searchForSubtitles(

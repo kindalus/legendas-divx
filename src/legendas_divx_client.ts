@@ -52,12 +52,8 @@ export class LegendasDivxClient {
 		// O login é feito em duas etapas, primeiro é um GET para obter os cookies de sessão
 		// Depois é feito um POST com os dados de login
 
-		// this.readCookiesFromDisk();
-
 		await this.#clearSessionForLogin();
 		await this.#loginStage(username, password);
-
-		// this.#writeCookiesToDisk();
 	}
 
 	async downloadSubs(metadata: MediaMetadata, fileUrl: string) {
