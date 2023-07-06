@@ -34,7 +34,7 @@ function printNoResults(noResults: SearchResults[]) {
 		return;
 	}
 
-	console.log("No results found for the following files:");
+	console.log("\nNo results found for the following files:");
 	noResults.forEach((result) => console.log(result.metadata.rawTitle));
 	console.log("--------------------------------------------------");
 }
@@ -44,7 +44,7 @@ function printOtherResults(withResults: SearchResults[]) {
 		return;
 	}
 
-	console.log("Non optimal subtitles found for the following files:");
+	console.log("\nNon optimal subtitles found for the following files:");
 	withResults.forEach((result) => {
 		console.log(result.metadata.rawTitle);
 		console.log(
@@ -89,13 +89,15 @@ async function searchForSubtitles(
 		const metadata = parseMediaFilename(file);
 
 		if (!metadata) {
-			throw "Could not parse media filename";
+			return undefined;
 		}
 
 		return await client.searchSubtitles(metadata);
 	});
 
-	const results = await Promise.all(resultPromises);
+	const validPromises = resultPromises.filter((p) => p !== undefined) as Promise<SearchResults>[];
+
+	const results = await Promise.all(validPromises);
 
 	return results;
 }
