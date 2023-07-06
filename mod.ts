@@ -36,8 +36,8 @@ function printNoResults(noResults: SearchResults[]) {
 	}
 
 	console.log("\nNo results found for the following files:");
-	noResults.forEach((result) => console.log(result.metadata.rawTitle));
 	console.log("--------------------------------------------------");
+	noResults.forEach((result) => console.log(result.metadata.rawTitle));
 }
 
 function printOtherResults(withResults: SearchResults[]) {
@@ -47,13 +47,13 @@ function printOtherResults(withResults: SearchResults[]) {
 
 	console.log("\nNon optimal subtitles found for the following files:");
 	withResults.forEach((result) => {
+		console.log("--------------------------------------------------");
 		console.log(result.metadata.rawTitle);
 		console.log(
 			result.others
 				.map((other) => new URL(other.url, LegendasDivxClient.DOWNLOADS_URL).toString())
 				.join("\n")
 		);
-		console.log("--------------------------------------------------");
 	});
 }
 
