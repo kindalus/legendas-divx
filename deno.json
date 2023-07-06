@@ -1,0 +1,10 @@
+{
+	"imports": {
+		"path": "https://deno.land/std@0.193.0/path/mod.ts",
+		"fs": "https://deno.land/std@0.193.0/fs/mod.ts",
+		"flags": "https://deno.land/std@0.193.0/flags/mod.ts",
+
+		"node-unrar-js": "npm:node-unrar-js@0.8.1",
+		"yauzl": "npm:yauzl@2.10.0"
+	}
+}

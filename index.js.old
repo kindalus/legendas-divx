@@ -8,12 +8,6 @@ const yauzl = require("yauzl");
 const path = require("path");
 const { exit } = require("process");
 
-const URL_MODULES = "https://www.legendasdivx.pt/modules.php";
-const URL_LOGIN = "https://www.legendasdivx.pt/forum/ucp.php?mode=login";
-const URL_SEARCH =
-	"https://www.legendasdivx.pt/modules.php?name=Downloads&file=jz&d_op=search&op=_jz00";
-const TRUSTED_USERS = ["arlequim93", "razor2911"];
-
 const ACCEPTED_FORMATS = [".mkv", ".mp4", ".avi"];
 const COOKIES_PATH = path.join(HOME_DIR, "/.legendas-divx-cookies");
 var COOKIES = {};
@@ -71,97 +65,19 @@ function isAcceptedFormat(file) {
 	return ACCEPTED_FORMATS.includes(file.slice(-4));
 }
 
-async function authenticate() {
-	// Inicializa a ligação para legendasdivx.pt
-	// 1. Verifica as cookies no ficheiro ~/.legendas-divx-cookies
-	if (fs.existsSync(COOKIES_PATH)) COOKIES = JSON.parse(String(fs.readFileSync(COOKIES_PATH)));
-	else COOKIES = {};
-
-	// 2. Faz o login para obter novas cookies se necessário
-	let loginFormData = {
-		username: process.env.LEGENDAS_DIVX_USERNAME,
-		password: process.env.LEGENDAS_DIVX_PASSWORD,
-		redirect: "index.php",
-		login: "Ligue-se",
-	};
-
-	if (COOKIES["phpbb3_2z8zs_sid"]) loginFormData.sid = COOKIES["phpbb3_2z8zs_sid"].value;
-
-	await post(URL_LOGIN, loginFormData);
-
-	if (!COOKIES["phpbb3_2z8zs_sid"] || COOKIES["phpbb3_2z8zs_sid"].value == 1) {
-		console.error("Login failed");
-		return;
-	}
-
-	// 3. Guarda as cookies
-	fs.writeFile(COOKIES_PATH, JSON.stringify(COOKIES), (err) => {
-		if (err) console.error(err);
-	});
-}
+async function authenticate() {}
 
 /**
  *
  * @param {string[]} files
  */
-async function parseVideosMetadata(files) {
-	let metadata = new Array();
-
-	for (let index = 0; index < files.length; index++) {
-		const file = files[index];
-
-		const indexOf = file.lastIndexOf("/");
-
-		if (index > 0) {
-			await waitRandomnly();
-		}
-
-		const data = {
-			path: indexOf == -1 ? "./" : file.substring(0, indexOf + 1),
-			rawTitle: indexOf == -1 ? file : file.substring(indexOf + 1),
-		};
-
-		data.title = data.rawTitle.match(/(.*?)(-?\[.*?\])?(\.\w{3})?$/i)[1];
-
-		let splits = data.title.match(/(.*)\W+(s\d\de\d\d|\d{4})\.?(\d{3,4}p)?\.(\w+)/i);
-		if (splits) {
-			data.shortTitle = splits[1].replace(/\./g, " ").trim();
-			data.quality = splits[3] ? splits[3].trim() : "720p";
-			data.release = splits[4].trim();
-
-			if (splits[2].length == 4) {
-				data.year = splits[2].trim();
-				data.movie = true;
-			} else {
-				data.show = true;
-				data.episode = splits[2].trim();
-			}
-
-			data.query = data.shortTitle.concat(" ", data.show ? data.episode : data.year);
-
-			metadata.push(data);
-		} else {
-			console.error(`Error parsing title: ${data.rawTitle}`);
-		}
-	}
-
-	return metadata;
-}
-
-function waitRandomnly() {
-	const timeout = Math.random() * 30000;
-
-	return new Promise((resolve) => {
-		setTimeout(resolve, timeout);
-	});
-}
 
 async function downloadSubsMetadata(metadata) {
 	let newMetadata = new Array();
 
 	for (let i = 0; i < metadata.length; i++) {
 		let data = metadata[i];
-		let rawHtml = await post(URL_SEARCH, { query: data.query });
+		let rawHtml = await get(URL_SEARCH, { query: data.query });
 
 		// Uglify
 		let hits = new Array();
@@ -362,6 +278,28 @@ function extractZip(filename, data) {
 			});
 		});
 	}
+}
+
+async function get(url, data) {
+	const queryParams = Object.entries(data)
+		.map(([key, value]) => `${key}=${value}`)
+		.join("&");
+
+	let options = {
+		method: "GET",
+		headers: {
+			Cookie: cookiesToString(COOKIES),
+		},
+	};
+
+	let res = await fetch(url + queryParams, options);
+
+	if (res.status == 200 || res.status == 302) {
+		return await res.text();
+	}
+
+	console.error(res.status);
+	throw "Response Status: " + res.status;
 }
 
 async function post(url, data) {
