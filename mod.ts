@@ -5,6 +5,7 @@ import { MediaMetadata, parseMediaFilename } from "./src/media_file_parser.ts";
 import { SearchResults, parseSearchResult } from "./src/subtitle_search_result_parser.ts";
 import { extractZip } from "./src/zip_extractor.ts";
 import { extractRar } from "./src/rar_extractor.ts";
+import { VERSION } from "./version.ts";
 
 async function main(username: string, password: string, files: string[]) {
 	const client = new LegendasDivxClient(parseSearchResult, extractZip, extractRar);
@@ -78,7 +79,13 @@ function splitResults(results: SearchResults[]) {
 
 function nonExistingSubtitles(filename: string): boolean {
 	const subtitleFilename = filename.replace(/\.[^.]+$/, ".srt");
-	return !fs.existsSync(subtitleFilename);
+	const exists = fs.existsSync(subtitleFilename);
+
+	if (exists) {
+		console.log(`Subtitle '${filename}' exists already, skipping. Use -f to force download.`);
+	}
+
+	return !exists;
 }
 
 async function searchForSubtitles(
@@ -112,6 +119,7 @@ const args = parse(Deno.args, {
 });
 
 if (args.help) {
+	console.log("Version:", VERSION);
 	console.log("Usage: legendas-divx.js [-f|-h] files...");
 	Deno.exit(0);
 }
