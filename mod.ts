@@ -5,8 +5,9 @@ import { MediaMetadata, parseMediaFilename } from "./src/media_file_parser.ts";
 import { SearchResults, parseSearchResult } from "./src/subtitle_search_result_parser.ts";
 import { extractZip } from "./src/zip_extractor.ts";
 import { extractRar } from "./src/rar_extractor.ts";
-import { VERSION } from "./version.ts";
 import { Options } from "./src/options.ts";
+
+export const VERSION = "2023-07-25 23:19";
 
 async function main(username: string, password: string, files: string[], opts?: Options) {
 	const client = new LegendasDivxClient(parseSearchResult, extractZip, extractRar);

@@ -150,6 +150,11 @@ export class LegendasDivxClient {
 
 		const res = await fetch(SEARCH_URL + query, options);
 
+		if (opts?.verbose) {
+			console.log("Request URL: " + res.url);
+			console.log("Response status: " + res.status);
+		}
+
 		if (res.status !== 200 && res.status !== 302) {
 			throw "Response Status: " + res.status;
 		}
