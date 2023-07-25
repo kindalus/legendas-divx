@@ -6,26 +6,31 @@ import { SearchResults, parseSearchResult } from "./src/subtitle_search_result_p
 import { extractZip } from "./src/zip_extractor.ts";
 import { extractRar } from "./src/rar_extractor.ts";
 import { VERSION } from "./version.ts";
+import { Options } from "./src/options.ts";
 
-async function main(username: string, password: string, files: string[]) {
+async function main(username: string, password: string, files: string[], opts?: Options) {
 	const client = new LegendasDivxClient(parseSearchResult, extractZip, extractRar);
-	await client.login(username, password);
+	await client.login(username, password, opts);
 
-	const results = await searchForSubtitles(client, files);
+	const results = await searchForSubtitles(client, files, opts);
 
-	const { noResults, withResults, otherResults } = splitResults(results);
+	const { noResults, withResults, otherResults } = splitResults(results, opts);
 
 	printNoResults(noResults);
 	printOtherResults(otherResults);
 
-	await Promise.all(withResults.map((r) => toDownloadPromise(client, r)));
+	await Promise.all(withResults.map((r) => toDownloadPromise(client, r, opts)));
 }
 
-async function toDownloadPromise(client: LegendasDivxClient, result: SearchResults): Promise<void> {
+async function toDownloadPromise(
+	client: LegendasDivxClient,
+	result: SearchResults,
+	opts?: Options
+): Promise<void> {
 	const url = result.hits[0]?.url ?? result.partialHits[0].url;
 	const optimal = result.hits[0]?.url ? true : false;
 
-	await client.downloadSubs(result.metadata, url);
+	await client.downloadSubs(result.metadata, url, opts);
 
 	console.log(`${result.metadata.rawTitle}\t\t[${optimal ? "optimal" : "partial match"}]`);
 }
@@ -57,7 +62,7 @@ function printOtherResults(withResults: SearchResults[]) {
 	});
 }
 
-function splitResults(results: SearchResults[]) {
+function splitResults(results: SearchResults[], _opts?: Options) {
 	const noResults = results.filter(
 		(result) =>
 			result.hits.length === 0 &&
@@ -90,13 +95,14 @@ function nonExistingSubtitles(filename: string): boolean {
 
 async function searchForSubtitles(
 	client: LegendasDivxClient,
-	files: string[]
+	files: string[],
+	opts?: Options
 ): Promise<SearchResults[]> {
 	const parsedFiles = files
 		.map(parseMediaFilename)
 		.filter((f) => f !== undefined) as MediaMetadata[];
 
-	const resultPromises = parsedFiles.map((metadata) => client.searchSubtitles(metadata));
+	const resultPromises = parsedFiles.map((metadata) => client.searchSubtitles(metadata, opts));
 
 	const results = await Promise.all(resultPromises);
 
@@ -106,6 +112,7 @@ async function searchForSubtitles(
 // Get username and password from environment variables
 const username = Deno.env.get("LEGENDAS_DIVX_USERNAME")!;
 const password = Deno.env.get("LEGENDAS_DIVX_PASSWORD")!;
+const DEBUG = Deno.env.get("DEBUG") === "1";
 
 // Exit if username or password are not set
 if (!username || !password) {
@@ -115,12 +122,12 @@ if (!username || !password) {
 
 // Parse CLI arguments
 const args = parse(Deno.args, {
-	alias: { h: "help", f: "force" },
+	alias: { h: "help", f: "force", v: "verbose" },
 });
 
 if (args.help) {
 	console.log("Version:", VERSION);
-	console.log("Usage: legendas-divx.js [-f|-h] files...");
+	console.log("Usage: legendas-divx.js [-f|-h] [-v] files...");
 	Deno.exit(0);
 }
 
@@ -133,4 +140,4 @@ if (files.length === 0) {
 	Deno.exit(1);
 }
 
-main(username, password, files);
+main(username, password, files, { verbose: (DEBUG || args.verbose) ?? false, dryRun: false });

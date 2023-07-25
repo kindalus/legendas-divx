@@ -1,6 +1,7 @@
 import { MediaMetadata, isMovie } from "./media_file_parser.ts";
 import { SearchResults } from "./subtitle_search_result_parser.ts";
 import { ArchiveExtractorFn } from "./archive_extractor.ts";
+import { Options } from "./options.ts";
 
 const DOWNLOADS_URL = "https://www.legendasdivx.pt";
 const LOGIN_URL = "https://www.legendasdivx.pt/forum/ucp.php?mode=login";
@@ -47,7 +48,7 @@ export class LegendasDivxClient {
 			.join("; ");
 	}
 
-	async login(username: string, password: string) {
+	async login(username: string, password: string, _opts?: Options) {
 		// Faz o login para obter novas cookies se necessário
 		// O login é feito em duas etapas, primeiro é um GET para obter os cookies de sessão
 		// Depois é feito um POST com os dados de login
@@ -56,7 +57,7 @@ export class LegendasDivxClient {
 		await this.#loginStage(username, password);
 	}
 
-	async downloadSubs(metadata: MediaMetadata, fileUrl: string) {
+	async downloadSubs(metadata: MediaMetadata, fileUrl: string, _opts?: Options) {
 		const url = new URL(fileUrl, DOWNLOADS_URL);
 
 		const headers = new Headers();
@@ -134,8 +135,12 @@ export class LegendasDivxClient {
 		return body;
 	}
 
-	async searchSubtitles(metadata: MediaMetadata): Promise<SearchResults> {
+	async searchSubtitles(metadata: MediaMetadata, opts?: Options): Promise<SearchResults> {
 		const query = this.#buildQuery(metadata);
+
+		if (opts?.verbose) {
+			console.log("Searching for: " + query);
+		}
 
 		const options = {
 			headers: {
