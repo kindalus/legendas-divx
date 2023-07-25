@@ -1,3 +1,5 @@
+import { VALID_RELEASES } from "./valid_releases.ts";
+
 export interface ShowMetadata extends CommonMetadata {
 	readonly episode: string;
 }
@@ -36,13 +38,17 @@ export function parseMediaFilename(file: string): MediaMetadata | undefined {
 		return;
 	}
 
+	const release = VALID_RELEASES.find((r) =>
+		rawTitle.toLocaleLowerCase().includes(r.toLowerCase())
+	);
+
 	const metadata: Partial<CommonMetadata> = {
 		path,
 		rawTitle,
 		title,
 		shortTitle: titleSplits[1].replace(/\./g, " ").trim(),
 		quality: titleSplits[3] ? titleSplits[3].trim() : "720p",
-		release: titleSplits[4].trim(),
+		release: release ?? titleSplits[4].trim(),
 	};
 
 	if (titleSplits[2].length === 4) {
