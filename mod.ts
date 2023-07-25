@@ -99,7 +99,7 @@ async function searchForSubtitles(
 	opts?: Options
 ): Promise<SearchResults[]> {
 	const parsedFiles = files
-		.map(parseMediaFilename)
+		.map((v) => parseMediaFilename(v, opts))
 		.filter((f) => f !== undefined) as MediaMetadata[];
 
 	const resultPromises = parsedFiles.map((metadata) => client.searchSubtitles(metadata, opts));

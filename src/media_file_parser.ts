@@ -1,3 +1,4 @@
+import { Options } from "./options.ts";
 import { VALID_RELEASES } from "./valid_releases.ts";
 
 export interface ShowMetadata extends CommonMetadata {
@@ -24,7 +25,7 @@ export function isMovie(metadata: MediaMetadata): metadata is MovieMetadata {
 	return (metadata as MovieMetadata).year !== undefined;
 }
 
-export function parseMediaFilename(file: string): MediaMetadata | undefined {
+export function parseMediaFilename(file: string, opts?: Options): MediaMetadata | undefined {
 	const indexOf = file.lastIndexOf("/");
 
 	const path = indexOf == -1 ? "./" : file.substring(0, indexOf + 1);
@@ -59,9 +60,16 @@ export function parseMediaFilename(file: string): MediaMetadata | undefined {
 		} as MovieMetadata;
 	}
 
-	return {
+	const finalMetadata = {
 		...metadata,
 		episode: titleSplits[2].trim(),
 		movie: false,
 	} as ShowMetadata;
+
+	if (opts?.verbose) {
+		console.log("Parsed metadata:");
+		console.log(JSON.stringify(finalMetadata, null, 2));
+	}
+
+	return finalMetadata;
 }
