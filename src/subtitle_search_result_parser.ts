@@ -1,5 +1,6 @@
 import { MediaMetadata } from "./media_file_parser.ts";
 import { fullMatch, partialMatch } from "./media_matchers.ts";
+import { Options } from "./options.ts";
 
 const TRUSTED_USERS = ["arlequim93", "razor2911"];
 const SUBTITLE_RE =
@@ -19,8 +20,16 @@ export interface SearchResults {
 	others: SubtitleCandidate[];
 }
 
-export function parseSearchResult(metadata: MediaMetadata, rawHtml: string): SearchResults {
+export function parseSearchResult(
+	metadata: MediaMetadata,
+	rawHtml: string,
+	opts?: Options
+): SearchResults {
 	const subsSections = rawHtml.replace(/\n/g, "").match(new RegExp(SUBTITLE_RE, "g"));
+
+	if (opts?.verbose) {
+		console.log("Subtitles Sections:", subsSections);
+	}
 
 	const results = emptyResults(metadata);
 
