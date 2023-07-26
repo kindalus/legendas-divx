@@ -25,6 +25,10 @@ export function parseSearchResult(
 	rawHtml: string,
 	opts?: Options
 ): SearchResults {
+	if (opts?.verbose) {
+		console.log("Raw HTML:", rawHtml);
+	}
+
 	const subsSections = rawHtml.replace(/\n/g, "").match(new RegExp(SUBTITLE_RE, "g"));
 
 	if (opts?.verbose) {

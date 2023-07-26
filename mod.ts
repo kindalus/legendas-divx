@@ -7,7 +7,7 @@ import { extractZip } from "./src/zip_extractor.ts";
 import { extractRar } from "./src/rar_extractor.ts";
 import { Options } from "./src/options.ts";
 
-export const VERSION = "2023-07-25 23:47";
+export const VERSION = "2023-07-26 09:22";
 
 async function main(username: string, password: string, files: string[], opts?: Options) {
 	const client = new LegendasDivxClient(parseSearchResult, extractZip, extractRar);
