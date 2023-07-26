@@ -25,12 +25,12 @@ export function parseSearchResult(
 	rawHtml: string,
 	opts?: Options
 ): SearchResults {
-	const oneLineHtml = rawHtml.replace(/\n/g, " ");
+	const cleaned = cleanHtml(rawHtml);
 
 	if (opts?.verbose) {
-		console.log("Raw HTML:", oneLineHtml);
+		console.log("Raw HTML:", cleaned);
 	}
-	const subsSections = oneLineHtml.match(new RegExp(SUBTITLE_RE, "g"));
+	const subsSections = cleaned.match(new RegExp(SUBTITLE_RE, "g"));
 
 	if (opts?.verbose) {
 		console.log("Subtitles Sections:", subsSections);
@@ -85,4 +85,12 @@ function candidateFromSection(section: string): SubtitleCandidate {
 		desc: subtitleDesc[2].replace(/(<.+?>)+/g, "\n"),
 		url: subtitleDesc[3],
 	};
+}
+
+function cleanHtml(html: string): string {
+	const oneLineHtml = html.replace(/\n/g, " ");
+	const bodyOnly = oneLineHtml.match(/<body.*?>(.*)<\/body>/i)![1];
+	const whitoutScripts = bodyOnly.replace(/<script.*?<\/script>/gi, "");
+
+	return whitoutScripts;
 }
