@@ -175,7 +175,7 @@ export class LegendasDivxClient {
 		if (opts?.verbose) {
 			console.log(
 				JSON.stringify(parsed, null, 2)
-					.replaceAll(/"desc": "(.*?)"/g, "\n\n$1\n\n")
+					.replaceAll(/"desc": "(.*?)"/g, "\nDescrição:\n$1\n**********\n")
 					.replaceAll("\\n", "\n")
 			);
 		}

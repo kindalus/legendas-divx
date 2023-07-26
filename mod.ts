@@ -2,12 +2,17 @@ import { fs, parse } from "./deps.ts";
 
 import { LegendasDivxClient } from "./src/legendas_divx_client.ts";
 import { MediaMetadata, parseMediaFilename } from "./src/media_file_parser.ts";
-import { SearchResults, parseSearchResult } from "./src/subtitle_search_result_parser.ts";
+import {
+	SearchResults,
+	SubtitleCandidate,
+	parseSearchResult,
+} from "./src/subtitle_search_result_parser.ts";
 import { extractZip } from "./src/zip_extractor.ts";
 import { extractRar } from "./src/rar_extractor.ts";
 import { Options } from "./src/options.ts";
+import { VALID_RELEASES } from "./src/valid_releases.ts";
 
-export const VERSION = "2023-07-26 13:15";
+export const VERSION = "2023-07-26 13:49";
 
 async function main(username: string, password: string, files: string[], opts?: Options) {
 	const client = new LegendasDivxClient(parseSearchResult, extractZip, extractRar);
@@ -28,12 +33,20 @@ async function toDownloadPromise(
 	result: SearchResults,
 	opts?: Options
 ): Promise<void> {
-	const url = result.hits[0]?.url ?? result.partialHits[0].url;
+	const hit = result.hits[0] ?? result.partialHits[0];
+
+	const url = hit.url;
 	const optimal = result.hits[0]?.url ? true : false;
+	const user = hit.user;
+	const rank = hit.rank;
 
 	await client.downloadSubs(result.metadata, url, opts);
 
-	console.log(`${result.metadata.rawTitle}\t\t[${optimal ? "optimal" : "partial match"}]`);
+	console.log(
+		`${result.metadata.rawTitle}\t\t[${
+			optimal ? "optimal" : "partial match"
+		}] [${user} / ${rank}]`
+	);
 }
 
 function printNoResults(noResults: SearchResults[]) {
@@ -56,13 +69,26 @@ function printOtherResults(withResults: SearchResults[]) {
 		console.log(result.metadata.rawTitle);
 		console.log(
 			result.others
-				.map((other) => new URL(other.url, LegendasDivxClient.DOWNLOADS_URL).toString())
+				.map((other) => {
+					const url = new URL(other.url, LegendasDivxClient.DOWNLOADS_URL).toString();
+					const releases = releaseForNonOptiomalSubtitle(other);
+					return `${url} [${other.user} / ${other.rank}] [${releases}]`;
+				})
 				.join("\n")
 		);
 		console.log("--------------------------------------------------");
 	});
 
 	console.log("\n");
+}
+
+function releaseForNonOptiomalSubtitle(subtitles: SubtitleCandidate): string {
+	const releases = VALID_RELEASES.filter((release) => {
+		const re = new RegExp(`.${release}.`, "i");
+		return subtitles.desc.match(re);
+	});
+
+	return releases.join(", ");
 }
 
 function splitResults(results: SearchResults[], _opts?: Options) {

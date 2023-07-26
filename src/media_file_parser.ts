@@ -39,9 +39,7 @@ export function parseMediaFilename(file: string, opts?: Options): MediaMetadata 
 		return;
 	}
 
-	const release = VALID_RELEASES.find((r) =>
-		rawTitle.toLocaleLowerCase().includes(r.toLowerCase())
-	);
+	const release = VALID_RELEASES.find(releaseForTitle(title));
 
 	const metadata: Partial<CommonMetadata> = {
 		path,
@@ -72,4 +70,12 @@ export function parseMediaFilename(file: string, opts?: Options): MediaMetadata 
 	}
 
 	return finalMetadata;
+}
+
+function releaseForTitle(title: string): (s: string) => boolean {
+	const lowerCasedTitle = title.toLocaleLowerCase();
+	return (s) => {
+		const lower = s.toLocaleLowerCase();
+		return lowerCasedTitle.includes(`.${lower}.`) || title.includes(` ${lower} `);
+	};
 }
