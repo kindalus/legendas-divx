@@ -73,7 +73,14 @@ export class LegendasDivxClient {
 			method: "GET",
 		};
 
-		const res = await fetch(url, init);
+		const res = await fetch(url, init).catch((err) => {
+			console.error("unexpected error: ", err);
+		});
+
+		if (!res) {
+			return;
+		}
+
 		const contentType = res.headers.get("Content-Type")!.match(/(.*?)(;|$)/)![1];
 
 		const ext = SUBTITLES_CONTENT_TYPES[contentType];
