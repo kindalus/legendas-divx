@@ -74,7 +74,8 @@ export class LegendasDivxClient {
 		};
 
 		const res = await fetch(url, init).catch((err) => {
-			console.error("unexpected error: ", err);
+			console.log("Error downloading file: ", metadata.rawTitle);
+			console.error(err);
 		});
 
 		if (!res) {

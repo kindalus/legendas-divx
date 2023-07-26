@@ -7,7 +7,7 @@ import { extractZip } from "./src/zip_extractor.ts";
 import { extractRar } from "./src/rar_extractor.ts";
 import { Options } from "./src/options.ts";
 
-export const VERSION = "2023-07-26 12:43";
+export const VERSION = "2023-07-26 12:48";
 
 async function main(username: string, password: string, files: string[], opts?: Options) {
 	const client = new LegendasDivxClient(parseSearchResult, extractZip, extractRar);
@@ -51,16 +51,18 @@ function printOtherResults(withResults: SearchResults[]) {
 		return;
 	}
 
-	console.log("\nNon optimal subtitles found for the following files:");
+	console.log("\nNon optimal subtitles found for the following files:\n");
 	withResults.forEach((result) => {
-		console.log("--------------------------------------------------");
 		console.log(result.metadata.rawTitle);
 		console.log(
 			result.others
 				.map((other) => new URL(other.url, LegendasDivxClient.DOWNLOADS_URL).toString())
 				.join("\n")
 		);
+		console.log("--------------------------------------------------");
 	});
+
+	console.log("\n");
 }
 
 function splitResults(results: SearchResults[], _opts?: Options) {
