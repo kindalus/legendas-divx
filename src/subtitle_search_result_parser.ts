@@ -1,10 +1,11 @@
+import { DOMParser, Node } from "../deps.ts";
 import { MediaMetadata } from "./media_file_parser.ts";
 import { fullMatch, partialMatch } from "./media_matchers.ts";
 import { Options } from "./options.ts";
 
 const TRUSTED_USERS = ["arlequim93", "razor2911"];
-const SUBTITLE_RE =
-	/User_Info&username=(\w+).*?<img id="capa_grande.*?<center>(.*?)<\/center>.*?href="(modules\.php\?name=Downloads&d_op=getit&lid=.*?)"/;
+// const SUBTITLE_RE =
+// 	/User_Info&username=(\w+).*?<img id="capa_grande.*?<center>(.*?)<\/center>.*?href="(modules\.php\?name=Downloads&d_op=getit&lid=.*?)"/;
 
 export interface SubtitleCandidate {
 	user: string;
@@ -25,25 +26,16 @@ export function parseSearchResult(
 	rawHtml: string,
 	opts?: Options
 ): SearchResults {
-	const cleaned = cleanHtml(rawHtml);
+	const subsNodes = extractSubtitlesNodes(rawHtml);
 
 	if (opts?.verbose) {
-		console.log("Raw HTML:", cleaned);
-	}
-	const subsSections = cleaned.match(new RegExp(SUBTITLE_RE, "g"));
-
-	if (opts?.verbose) {
-		console.log("Subtitles Sections:", subsSections);
+		console.log("Raw HTML:", subsNodes.map((s) => s.textContent).join("\n"));
 	}
 
 	const results = emptyResults(metadata);
 
-	if (!subsSections) {
-		return results;
-	}
-
-	subsSections.reduce((acc, section) => {
-		const candidate = candidateFromSection(section);
+	subsNodes.reduce((acc, node) => {
+		const candidate = candidateFromNode(node);
 
 		if (fullMatch(metadata, candidate.desc)) {
 			acc.hits.push(candidate);
@@ -76,21 +68,43 @@ function emptyResults(metadata: MediaMetadata) {
 	};
 }
 
-function candidateFromSection(section: string): SubtitleCandidate {
-	const subtitleDesc = section.match(SUBTITLE_RE)!;
+function candidateFromNode(node: Node): SubtitleCandidate {
+	const root = node.firstChild;
+	//@ts-ignore deno not recognizing innerHTML and innerText
+	const user = root.firstChild.innerHTML.match(/User_Info&amp;username=(\w+)/)![1];
+	//@ts-ignore deno not recognizing innerHTML and innerText
+	const userRank = root.childNodes[1].lastChild.innerHTML.match(/rank(\d+).gif/)?.[1];
 
 	return {
-		user: subtitleDesc[1],
-		rank: TRUSTED_USERS.some((user) => user === subtitleDesc[1]) ? 12 : 5,
-		desc: subtitleDesc[2].replace(/(<.+?>)+/g, "\n"),
-		url: subtitleDesc[3],
+		user,
+		rank: TRUSTED_USERS.some((u) => u === user) ? 10 : userRank ? parseInt(userRank) : 5,
+		//@ts-ignore deno not recognizing innerHTML and innerText
+		desc: root.childNodes[3].childNodes[1].innerText,
+		//@ts-ignore deno not recognizing innerHTML and innerText
+		url: root.lastChild.innerHTML
+			.match(/href="(modules\.php\?nam.*?)"/)[1]
+			.replace(/&amp;/g, "&"),
 	};
 }
 
-function cleanHtml(html: string): string {
-	const oneLineHtml = html.replace(/\n/g, " ");
-	const bodyOnly = oneLineHtml.match(/<body.*?>(.*)<\/body>/i)![1];
-	const whitoutScripts = bodyOnly.replace(/<script.*?<\/script>/gi, "");
+function extractSubtitlesNodes(html: string): Node[] {
+	const parser = new DOMParser();
 
-	return whitoutScripts;
+	const doc = parser.parseFromString(html, "text/html")!;
+	if (!doc) {
+		return [];
+	}
+
+	const els = doc.querySelectorAll("table.forumborder2");
+	if (els.length <= 3) {
+		return [];
+	}
+
+	const nodes = [];
+
+	for (let i = 1; i < els.length - 2; i++) {
+		nodes.push(els[i]);
+	}
+
+	return nodes;
 }

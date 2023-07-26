@@ -66,6 +66,7 @@ export class LegendasDivxClient {
 
 		const headers = new Headers();
 		headers.set("Cookie", this.#cookiesAsString);
+		headers.set("Connection", "keep-alive");
 
 		const init = {
 			headers,
