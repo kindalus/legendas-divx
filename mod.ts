@@ -43,7 +43,7 @@ async function toDownloadPromise(
 	await client.downloadSubs(result.metadata, url, opts);
 
 	console.log(
-		`${result.metadata.rawTitle}\t\t[${
+		`${result.metadata.rawTitle}\t[${
 			optimal ? "optimal" : "partial match"
 		}] [${user} / ${rank}]`
 	);
@@ -72,7 +72,7 @@ function printOtherResults(withResults: SearchResults[]) {
 				.map((other) => {
 					const url = new URL(other.url, LegendasDivxClient.DOWNLOADS_URL).toString();
 					const releases = releaseForNonOptiomalSubtitle(other);
-					return `${url} [${other.user} / ${other.rank}] [${releases}]`;
+					return `${url} \t[${other.user} / ${other.rank}] [${releases}]`;
 				})
 				.join("\n")
 		);
