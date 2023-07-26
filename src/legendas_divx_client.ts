@@ -173,7 +173,11 @@ export class LegendasDivxClient {
 		const parsed = this.#parseResultsFn(metadata, html);
 
 		if (opts?.verbose) {
-			console.log(JSON.stringify(parsed, null, 2).replaceAll("\\n", "\n"));
+			console.log(
+				JSON.stringify(parsed, null, 2)
+					.replaceAll(/"desc":"(.*?)"/g, "\n\n$1\n\n")
+					.replaceAll("\\n", "\n")
+			);
 		}
 
 		return parsed;
