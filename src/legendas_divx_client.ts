@@ -14,17 +14,13 @@ const SUBTITLES_CONTENT_TYPES: Record<string, string> = {
 	"text/html": "html",
 };
 
-export type ParseResultsFn = (
-	metadata: MediaMetadata,
-	rawHtml: string,
-	opts?: Options
-) => SearchResults;
+export type ParseResultsFn = (metadata: MediaMetadata, rawHtml: string) => SearchResults;
 
 export class LegendasDivxClient {
 	static readonly DOWNLOADS_URL = DOWNLOADS_URL;
 
 	#cookies: Record<string, unknown> = {};
-	#parseResultsFn: (metadata: MediaMetadata, rawHtml: string, opts?: Options) => SearchResults;
+	#parseResultsFn: ParseResultsFn;
 	#zipExtractorFn: ArchiveExtractorFn;
 	#rarExtractorFn: ArchiveExtractorFn;
 
@@ -174,7 +170,13 @@ export class LegendasDivxClient {
 
 		const html = await res.text();
 
-		return this.#parseResultsFn(metadata, html, opts);
+		const parsed = this.#parseResultsFn(metadata, html);
+
+		if (opts?.verbose) {
+			console.log(JSON.stringify(parsed, null, 2));
+		}
+
+		return parsed;
 	}
 
 	#buildQuery(metadata: MediaMetadata): string {

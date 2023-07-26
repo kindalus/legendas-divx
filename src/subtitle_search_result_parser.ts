@@ -1,7 +1,6 @@
 import { DOMParser, Node } from "../deps.ts";
 import { MediaMetadata } from "./media_file_parser.ts";
 import { fullMatch, partialMatch } from "./media_matchers.ts";
-import { Options } from "./options.ts";
 
 const TRUSTED_USERS = ["arlequim93", "razor2911"];
 // const SUBTITLE_RE =
@@ -21,16 +20,8 @@ export interface SearchResults {
 	others: SubtitleCandidate[];
 }
 
-export function parseSearchResult(
-	metadata: MediaMetadata,
-	rawHtml: string,
-	opts?: Options
-): SearchResults {
+export function parseSearchResult(metadata: MediaMetadata, rawHtml: string): SearchResults {
 	const subsNodes = extractSubtitlesNodes(rawHtml);
-
-	if (opts?.verbose) {
-		console.log("Raw HTML:", subsNodes.map((s) => s.textContent).join("\n"));
-	}
 
 	const results = emptyResults(metadata);
 
